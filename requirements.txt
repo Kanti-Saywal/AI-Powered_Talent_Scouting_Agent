@@ -1,0 +1,22 @@
+# TalentScout AI v4 — Python Requirements
+# Install with: pip install -r requirements.txt
+
+# ── Core Web Framework ────────────────────────────────────────────────────────
+flask>=3.0.0                  # Local web server and API routing
+
+# ── PDF Parsing (text-based PDFs) ────────────────────────────────────────────
+pdfplumber>=0.10.0            # Extracts text from selectable/text-based PDFs
+
+# ── DOCX Parsing ─────────────────────────────────────────────────────────────
+python-docx>=1.1.0            # Extracts text from Microsoft Word DOCX files
+
+# ── OCR for Scanned / Image-based PDFs ───────────────────────────────────────
+# These three packages work together to read scanned PDFs
+# They require Tesseract OCR engine installed separately on your system
+# Windows:  https://github.com/UB-Mannheim/tesseract/wiki
+# macOS:    brew install tesseract
+# Linux:    sudo apt install tesseract-ocr poppler-utils
+
+pytesseract>=0.3.10           # Python wrapper for Tesseract OCR engine
+pdf2image>=1.16.0             # Converts PDF pages to images before OCR
+pillow>=10.0.0                # Image processing (required by pdf2image)

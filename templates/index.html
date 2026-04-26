@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TalentScout AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header class="header">
+  <div class="logo">
+    <span class="logo-icon">&#127919;</span>
+    <span class="logo-text">TalentScout<span class="accent">AI</span></span>
+    <span class="ver-badge">v4</span>
+  </div>
+  <div class="header-badge">240 Built-in Candidates &middot; 24 Roles &middot; PDF/DOCX Upload</div>
+</header>
+<div class="progress-bar">
+  <div class="step active" id="step1"><span class="step-num">1</span><span class="step-label">Parse JD</span></div>
+  <div class="step-line"></div>
+  <div class="step" id="step2"><span class="step-num">2</span><span class="step-label">Discover</span></div>
+  <div class="step-line"></div>
+  <div class="step" id="step3"><span class="step-num">3</span><span class="step-label">Engage</span></div>
+  <div class="step-line"></div>
+  <div class="step" id="step4"><span class="step-num">4</span><span class="step-label">Shortlist</span></div>
+</div>
+<main class="main">
+  <!-- STEP 1 -->
+  <section class="panel" id="panel-jd">
+    <div class="panel-header">
+      <h2>&#128203; Paste Your Job Description</h2>
+      <p>The agent automatically extracts role title, required skills, and experience range.</p>
+    </div>
+    <textarea id="jdText" rows="11" placeholder="Paste your full job description here..."></textarea>
+    <div class="sample-btns">
+      <span class="label-text">Quick load:</span>
+      <button class="btn-sample" onclick="loadSample('de')">Senior Data Engineer</button>
+      <button class="btn-sample" onclick="loadSample('ml')">ML Engineer</button>
+      <button class="btn-sample" onclick="loadSample('ops')">Data Ops Manager</button>
+      <button class="btn-sample" onclick="loadSample('hubspot')">HubSpot Specialist</button>
+      <button class="btn-sample" onclick="loadSample('revops')">RevOps Manager</button>
+      <button class="btn-sample" onclick="loadSample('ta')">Talent Acquisition</button>
+      <button class="btn-sample" onclick="loadSample('csm')">Customer Success</button>
+      <button class="btn-sample" onclick="loadSample('sdr')">SDR</button>
+    </div>
+    <button class="btn-primary" id="parseBtn" onclick="parseJD()">&#128269; Parse Job Description</button>
+    <div class="hidden" id="parsedResult"></div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="panel hidden" id="panel-discover">
+    <div class="panel-header">
+      <h2>&#128101; Discover Matching Candidates</h2>
+      <p>Choose your source: scan the built-in database <strong>or</strong> upload your own CV files.</p>
+    </div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-builtin" onclick="switchMode('builtin')">
+        &#128452; Sample Database
+        <span class="tab-count">240 candidates &middot; 24 roles &middot; instant scan</span>
+      </button>
+      <button class="mode-tab" id="tab-upload" onclick="switchMode('upload')">
+        &#128193; Upload Your CVs
+        <span class="tab-count">PDF &middot; DOCX &middot; multiple files</span>
+      </button>
+    </div>
+    <div id="mode-builtin">
+      <p class="mode-hint">Instantly scan 240 built-in profiles across 24 roles.</p>
+      <button class="btn-primary" onclick="discoverBuiltin()">&#128269; Discover from Sample Database &rarr;</button>
+    </div>
+    <div id="mode-upload" class="hidden">
+      <p class="mode-hint">Upload CVs — the agent parses each file, scores against your JD, then runs the full chat &amp; engagement funnel identical to the sample database.</p>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('cvFiles').click()"
+           ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+        <div class="upload-icon">&#128193;</div>
+        <div class="upload-text" id="uploadText">Click to upload or drag &amp; drop CV files here</div>
+        <div class="upload-sub">Accepts PDF and DOCX &middot; Multiple files at once</div>
+        <input type="file" id="cvFiles" accept=".pdf,.docx,.doc" multiple style="display:none"
+               onchange="handleFileSelect(this.files)">
+      </div>
+      <div class="hidden" id="fileListBox">
+        <div class="file-list-header">
+          <span id="fileListTitle">0 files selected</span>
+          <button class="btn-sm-danger" onclick="clearFiles()">&#10005; Clear all</button>
+        </div>
+        <div id="fileList" class="file-list"></div>
+        <button class="btn-primary" id="parseStartBtn" onclick="startCVParsing()" style="margin-top:14px">
+          &#9881; Parse CVs &amp; Extract Candidate Info
+        </button>
+      </div>
+      <div class="hidden" id="parseProgressBox">
+        <div class="progress-header">
+          <span class="progress-label" id="progressLabel">Parsing CVs...</span>
+          <span class="progress-count" id="progressCount">0 / 0</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="parse-log" id="parseLog"></div>
+      </div>
+      <div class="hidden" id="parsedCVBox">
+        <div class="parsed-cv-header">
+          <span id="parsedCVCount"></span>
+          <button class="btn-primary" onclick="discoverUploaded()">&#128269; Score &amp; Match Against JD &rarr;</button>
+        </div>
+        <div class="parsed-cv-grid" id="parsedCVGrid"></div>
+        <p class="mode-hint" style="margin-top:8px">&#128229; A <strong>parsed_candidates.csv</strong> with all extracted skills is also saved in your project folder.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3: CANDIDATES (SAME FOR BOTH MODES) -->
+  <section class="panel hidden" id="panel-candidates">
+    <div class="panel-header">
+      <h2>&#127942; Top Matching Candidates</h2>
+      <p id="candidateSubtitle">Ranked by Match Score. Green skill tags matched your JD requirements.</p>
+    </div>
+    <div id="candidateGrid" class="candidate-grid"></div>
+    <div class="engage-options">
+      <p class="hint-text">
+        &#128161; <strong>Option A:</strong> Click &#128172; Chat Now on any card to start a live conversation &mdash; Interest Score updates in real time.<br>
+        <strong>Option B:</strong> Auto-engage all candidates in parallel and jump straight to ranked results.
+      </p>
+      <button class="btn-primary" id="engageAllBtn" onclick="engageAll()">&#9889; Auto-Engage All &amp; Generate Shortlist</button>
+    </div>
+  </section>
+
+  <!-- STEP 3b: ENGAGEMENT -->
+  <section class="panel hidden" id="panel-engage">
+    <div class="panel-header">
+      <h2>&#128172; Engagement Results</h2>
+      <p>Each candidate received a personalised outreach and multi-turn conversation. Click <strong>View Full Conversation</strong> to see every message.</p>
+    </div>
+    <div id="engagementArea"></div>
+  </section>
+
+  <!-- STEP 4: SHORTLIST -->
+  <section class="panel hidden" id="panel-shortlist">
+    <div class="panel-header">
+      <h2>&#128202; Ranked Shortlist</h2>
+      <p><strong>Combined Score = Match &times; 60% + Interest &times; 40%</strong></p>
+    </div>
+    <div id="shortlistTable"></div>
+    <button class="btn-secondary" style="margin-top:12px" onclick="exportCSV()">&#128229; Export Shortlist CSV</button>
+  </section>
+</main>
+
+<!-- LOADING -->
+<div class="loading-overlay hidden" id="loadingOverlay">
+  <div class="loading-box"><div class="spinner"></div><p id="loadingMsg">Processing...</p></div>
+</div>
+
+<!-- LIVE CHAT MODAL -->
+<div class="modal hidden" id="chatModal">
+  <div class="modal-backdrop" onclick="closeChatModal()"></div>
+  <div class="modal-box chat-modal-box">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <h3 id="chatModalTitle">Chat</h3>
+        <div class="interest-live-badge">Interest: <span id="chatInterestScore">&#8212;</span>/100</div>
+      </div>
+      <button class="modal-close" onclick="closeChatModal()">&#10005;</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="typing-area hidden" id="typingIndicator"></div>
+    <div class="chat-suggestions" id="chatSuggestions"></div>
+    <div class="chat-input-bar">
+      <textarea id="chatInput" rows="2" placeholder="Type your message... (Enter to send, Shift+Enter for new line)" onkeydown="handleChatKey(event)"></textarea>
+      <button class="btn-send" onclick="sendMsg()">Send &#9654;</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
